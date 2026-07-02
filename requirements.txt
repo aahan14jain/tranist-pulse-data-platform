@@ -1,0 +1,9 @@
+pyspark
+pandas
+pyarrow
+kafka-python
+gtfs-realtime-bindings
+requests
+boto3
+pytest
+python-dotenv

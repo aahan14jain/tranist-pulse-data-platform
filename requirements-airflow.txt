@@ -1,0 +1,4 @@
+# Optional: local Airflow CLI/dev tooling (matches docker image 2.9.0).
+# Requires Python 3.8–3.12. Use Docker for Airflow on newer Python versions.
+-r requirements.txt
+apache-airflow==2.9.0

@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.DS_Store
+
+# Airflow mounts / local runtime artifacts
+logs/
+
+# Spark checkpoints
+/tmp/transit-pulse-*
