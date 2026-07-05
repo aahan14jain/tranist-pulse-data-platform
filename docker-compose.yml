@@ -2,7 +2,10 @@
 # Not affiliated with King County Metro, Sound Transit, or any transit agency.
 
 x-airflow-common: &airflow-common
-  image: apache/airflow:2.9.0
+  build:
+    context: .
+    dockerfile: Dockerfile.airflow
+  image: transit-pulse-airflow:2.9.0
   environment: &airflow-common-env
     AIRFLOW__CORE__EXECUTOR: LocalExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
@@ -11,15 +14,30 @@ x-airflow-common: &airflow-common
     AIRFLOW__CORE__LOAD_EXAMPLES: "false"
     AIRFLOW__API__AUTH_BACKENDS: airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session
     AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    # Project packages (ingestion/, batch/, common/) imported by TaskFlow DAGs.
+    PYTHONPATH: /opt/airflow/project
+    JAVA_HOME: /usr/lib/jvm/default-java
+    # In-network service DNS for containers only. Literals (not ${...}) so host
+    # .env values (localhost:29092 / localhost:9000) never override these.
     KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     MINIO_ENDPOINT: http://minio:9000
+    # Spark footprint for in-container historical_backfill (LocalExecutor).
+    SPARK_MASTER: local[2]
+    SPARK_DRIVER_MEMORY: 2g
+    SPARK_DRIVER_MAX_RESULT_SIZE: 1g
+    SPARK_SQL_SHUFFLE_PARTITIONS: "4"
     MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
     MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
     GTFS_STATIC_URL: ${GTFS_STATIC_URL:-}
     GTFS_REALTIME_URL: ${GTFS_REALTIME_URL:-}
+    GTFS_STATIC_INGESTION_DATE: ${GTFS_STATIC_INGESTION_DATE:-}
+    RAW_ZONE_BUCKET: ${RAW_ZONE_BUCKET:-raw-zone}
+    CURATED_ZONE_BUCKET: ${CURATED_ZONE_BUCKET:-curated-zone}
+    DELAY_CALCULATOR_JOIN_MODE: ${DELAY_CALCULATOR_JOIN_MODE:-auto}
     AWS_REGION: ${AWS_REGION:-us-west-2}
   volumes:
-    - ./dags:/opt/airflow/dags
+    - ./orchestration/dags:/opt/airflow/dags
+    - ./:/opt/airflow/project
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
   user: "${AIRFLOW_UID:-50000}:0"
@@ -93,7 +111,8 @@ services:
       POSTGRES_PASSWORD: airflow
       POSTGRES_DB: airflow
     ports:
-      - "5432:5432"
+      # 5433 avoids clashing with a host Postgres on localhost:5432 (common on macOS).
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -145,6 +164,8 @@ services:
     <<: *airflow-common
     container_name: transit-pulse-airflow-scheduler
     command: scheduler
+    # LocalExecutor runs Spark backfill tasks here; give the JVM headroom.
+    mem_limit: 4g
     healthcheck:
       test: ["CMD", "airflow", "jobs", "check", "--job-type", "SchedulerJob", "--hostname", "$${HOSTNAME}"]
       interval: 30s

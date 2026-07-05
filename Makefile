@@ -1,4 +1,4 @@
-.PHONY: up down logs install test kafka-topics run-gtfs-static run-gtfs-realtime run-delay-calculator
+.PHONY: up down logs install test kafka-topics run-gtfs-static run-gtfs-realtime run-delay-calculator run-historical-backfill
 
 COMPOSE := docker compose
 KAFKA_CONTAINER := transit-pulse-kafka
@@ -40,3 +40,7 @@ run-gtfs-realtime: install
 
 run-delay-calculator: install
 	$(PYTHON) -m streaming.delay_calculator_job
+
+# Usage: make run-historical-backfill START_DATE=2026-07-01 END_DATE=2026-07-01
+run-historical-backfill: install
+	$(PYTHON) -m batch.historical_backfill --start-date $(START_DATE) --end-date $(END_DATE)

@@ -1,0 +1,24 @@
+# Custom Airflow image with the same Python deps as Transit Pulse Spark/batch jobs.
+# Extends the stock Airflow image so orchestration tasks can import ingestion/,
+# batch/, and common/ without one-off `pip install` inside running containers.
+#
+# Personal portfolio project; not affiliated with any transit agency.
+
+FROM apache/airflow:2.9.0
+
+USER root
+
+# JRE required by PySpark when the historical_backfill DAG runs in-container.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends default-jre-headless \
+    && apt-get autoremove -yqq --purge \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# default-java is an arch-agnostic symlink (amd64 / arm64).
+ENV JAVA_HOME=/usr/lib/jvm/default-java
+
+USER airflow
+
+COPY requirements.txt /requirements.txt
+RUN pip install --no-cache-dir -r /requirements.txt

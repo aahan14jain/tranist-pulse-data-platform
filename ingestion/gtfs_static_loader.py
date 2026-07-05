@@ -13,6 +13,7 @@ King County Metro); it is not affiliated with any transit agency.
 
 from __future__ import annotations
 
+import logging
 import os
 import zipfile
 from datetime import date
@@ -24,6 +25,8 @@ import pandas as pd
 import requests
 from botocore.exceptions import ClientError
 from dotenv import load_dotenv
+
+logger = logging.getLogger(__name__)
 
 RAW_BUCKET = "raw-zone"
 
@@ -139,11 +142,19 @@ def write_tables_to_minio(
 
     for table_name, df in tables.items():
         key = _s3_key(table_name, load_date)
-        buffer = BytesIO()
-        df.to_parquet(buffer, index=False)
-        buffer.seek(0)
-        s3_client.put_object(Bucket=bucket, Key=key, Body=buffer.getvalue())
+        try:
+            buffer = BytesIO()
+            df.to_parquet(buffer, index=False)
+            buffer.seek(0)
+            s3_client.put_object(Bucket=bucket, Key=key, Body=buffer.getvalue())
+        except Exception as exc:
+            # Surface the specific table so Airflow/task logs are actionable.
+            raise RuntimeError(
+                f"Failed to load GTFS static table {table_name!r} "
+                f"(bucket={bucket!r}, key={key!r}): {exc}"
+            ) from exc
         written[table_name] = key
+        logger.info("Wrote GTFS static table %s -> s3://%s/%s", table_name, bucket, key)
 
     return written
 

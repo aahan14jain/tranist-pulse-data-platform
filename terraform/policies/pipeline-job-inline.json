@@ -1,0 +1,70 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "RawBucketList",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+      "Resource": "arn:aws:s3:::RAW_BUCKET_NAME"
+    },
+    {
+      "Sid": "RawBucketReadWrite",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": [
+        "arn:aws:s3:::RAW_BUCKET_NAME/gtfs-static/*",
+        "arn:aws:s3:::RAW_BUCKET_NAME/vehicle-positions/*",
+        "arn:aws:s3:::RAW_BUCKET_NAME/spark-checkpoints/*"
+      ]
+    },
+    {
+      "Sid": "CuratedBucketList",
+      "Effect": "Allow",
+      "Action": ["s3:ListBucket", "s3:GetBucketLocation"],
+      "Resource": "arn:aws:s3:::CURATED_BUCKET_NAME"
+    },
+    {
+      "Sid": "CuratedBucketReadWrite",
+      "Effect": "Allow",
+      "Action": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::CURATED_BUCKET_NAME/route-delay-windows/*"
+    },
+    {
+      "Sid": "GlueCatalogRead",
+      "Effect": "Allow",
+      "Action": [
+        "glue:GetDatabase",
+        "glue:GetTable",
+        "glue:GetTables",
+        "glue:GetPartition",
+        "glue:GetPartitions"
+      ],
+      "Resource": [
+        "arn:aws:glue:REGION:ACCOUNT_ID:catalog",
+        "arn:aws:glue:REGION:ACCOUNT_ID:database/transit_pulse_curated",
+        "arn:aws:glue:REGION:ACCOUNT_ID:table/transit_pulse_curated/*"
+      ]
+    },
+    {
+      "Sid": "RedshiftDataApiOptional",
+      "Effect": "Allow",
+      "Action": [
+        "redshift-data:ExecuteStatement",
+        "redshift-data:DescribeStatement",
+        "redshift-data:GetStatementResult"
+      ],
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "aws:RequestedRegion": "REGION"
+        }
+      }
+    },
+    {
+      "Sid": "RedshiftGetCredentialsOptional",
+      "Effect": "Allow",
+      "Action": ["redshift-serverless:GetCredentials"],
+      "Resource": "arn:aws:redshift-serverless:REGION:ACCOUNT_ID:workgroup/*"
+    }
+  ]
+}

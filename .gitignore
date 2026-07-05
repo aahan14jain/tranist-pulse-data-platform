@@ -10,3 +10,10 @@ logs/
 
 # Spark checkpoints
 /tmp/transit-pulse-*
+
+# Terraform (state contains resource IDs; .terraform/ is large and regenerable)
+terraform/.terraform/
+terraform/terraform.tfstate
+terraform/terraform.tfstate.*
+terraform/terraform.tfvars
+terraform/*.tfplan

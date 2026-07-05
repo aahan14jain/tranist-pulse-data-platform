@@ -1,0 +1,13 @@
+aws_region         = "us-west-2"
+project_name       = "transit-pulse"
+environment        = "portfolio"
+
+# Must be globally unique.
+raw_bucket_name     = "transit-pulse-raw-YOURNAME"
+curated_bucket_name = "transit-pulse-curated-YOURNAME"
+
+# COST: lowest Redshift Serverless capacity; destroy when not demoing.
+redshift_base_capacity_rpu = 8
+
+# Empty = on-demand crawler only (cheaper).
+glue_crawler_schedule = ""
